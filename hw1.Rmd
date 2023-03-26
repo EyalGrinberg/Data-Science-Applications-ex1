@@ -53,7 +53,7 @@ These are the packages you will need. If you don't have them, you need to uncomm
 When you load the packages you may see different kinds of messages or warnings, skim them:
 
 ```{r}
-# install.packages(c("tidyverse"))
+#install.packages("tidyverse")
 library(tidyverse)
 ```
 
@@ -64,19 +64,19 @@ library(tidyverse)
 Read in the `passwords.csv` located at URL "https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-01-14/passwords.csv". Use the [`read_csv()`](https://readr.tidyverse.org/reference/read_delim.html) function from the `readr` package, already loaded if you loaded the `tidyverse` package.
 
 ```{r}
-# passwords <- ### YOUR CODE HERE ###
+passwords <- read_csv("https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-01-14/passwords.csv")
 ```
 
 Take a `glimpse()` at the data:
 
 ```{r}
-### YOUR CODE HERE ###
+glimpse(passwords)
 ```
 
 Print the number of rows and columns (no need to make it "pretty"):
 
 ```{r}
-### YOUR CODE HERE ###
+dim(passwords)
 ```
 
 ### Basic `dplyr` Verbs
@@ -86,42 +86,40 @@ Print the number of rows and columns (no need to make it "pretty"):
 Filter only passwords from the "fluffy" category (use only Tidyverse functions!):
 
 ```{r}
-### YOUR CODE HERE ###
+passwords %>% filter(category == "fluffy") %>% select(password)
 ```
 
 Filter only passwords in the "sport" and "cool-macho" and select only the `rank`, `password`, `category` and `strength` columns:
 
 ```{r}
-### YOUR CODE HERE ###
+passwords %>% filter(category %in% c("sport", "cool-macho")) %>% select(rank, password, category, strength)
 ```
 
 Same as above, but sort by `strength`, from weakest to strongest (and do try to make this in a single pipe):
 
 ```{r}
-### YOUR CODE HERE ###
+passwords %>% filter(category %in% c("sport", "cool-macho")) %>% select(rank, password, category, strength) %>% arrange(strength)
 ```
 
 Create a new column `is_123` which will hold TRUE if the password contains the string "123" and FALSE otherwise. Use the [`mutate()`](https://dplyr.tidyverse.org/reference/mutate.html) function and have a look at the [`str_detect()`](https://stringr.tidyverse.org/reference/str_detect.html) function from the `stringr` package, already loaded if you loaded the `tidyverse` package.
 
 ```{r}
-# passwords <- passwords %>%
-#   mutate(### YOUR CODE HERE ###)
+passwords <- passwords %>% mutate(is_123 = str_detect(password, "123"))
 ```
 
 Use the column you created to filter only passwords containing "123", use the [`pull()`](https://dplyr.tidyverse.org/reference/pull.html) function to extract those passwords as a vector called `passwords_with_123` and print it:
 
 ```{r}
-# passwords_with_123 <- passwords %>% ### YOUR CODE HERE ###
-#
-# print(passwords_with_123)
+passwords_with_123 <- passwords %>% filter(is_123 == T) %>% pull(password) 
+print(passwords_with_123)
 ```
 
 Use the [`summarise()`](https://dplyr.tidyverse.org/reference/summarise.html) function to get the mean`strength` of passwords in the "food" category:
 
 ```{r}
-# passwords %>%
-#   filter(### YOUR CODE HERE ###) %>%
-#   summarise(### YOUR CODE HERE ###)
+passwords %>% 
+   filter(category == "food") %>%
+   summarise(mean(strength))
 ```
 
 ### `group_by`, `summarize` and `count`
@@ -131,24 +129,22 @@ Use the [`summarise()`](https://dplyr.tidyverse.org/reference/summarise.html) fu
 Group the data by `category`, extract the mean strength in each category and sort by mean strength descending. Be sure to remove `NA` values if necessary:
 
 ```{r}
-# passwords %>%
-#   ### YOUR CODE HERE ### %>%
-#   summarise(### YOUR CODE HERE ###) %>%
-#   ### YOUR CODE HERE ###
+passwords %>% group_by(category) %>%
+   summarise(mean_strength = mean(strength, na.rm = T)) %>% arrange(-mean_strength)
 ```
 
 Count how many passwords appear in each category. Do not use the `group_by()` function.
 
 ```{r}
-### YOUR CODE HERE ###
+passwords %>% count(category)
 ```
 
 Combine the above two outputs in a single pipe: a table with a category's name `category`, `n` the number of passwords in it and `mean_strength`, their mean strength without `NA` values. Now you *may* use `group_by()` and also have a look at [`n()`](https://dplyr.tidyverse.org/reference/n.html):
 
 ```{r}
-# passwords %>%
-#   ### YOUR CODE HERE ### %>%
-#   summarise(### YOUR CODE HERE ###)
+passwords %>%
+  group_by(category) %>%
+  summarise(mean_strength = mean(strength, na.rm = T), n = n()) 
 ```
 
 ### `distinct`, `case_when` and `rename`
@@ -158,9 +154,9 @@ Combine the above two outputs in a single pipe: a table with a category's name `
 Print the `distinct()` (or `unique()`) categories of passwords containing "123":
 
 ```{r}
-# passwords %>%
-#   filter(### YOUR CODE HERE ###) %>%
-#   ### YOUR CODE HERE (can be more than 1 line) ###
+passwords %>%
+  filter(is_123 == T) %>%
+  distinct(category)
 ```
 
 Create a new column `time_unit_seconds` which will hold for each `time_unit` the number of **seconds** it represents (or `NA` if it is `NA`).
@@ -175,25 +171,42 @@ For your convenience:
 * a year is 31536000 seconds (with 365 days)
 
 ```{r}
-# passwords <- passwords %>%
-#   mutate(time_unit_seconds = case_when(
-#     ### YOUR CODE HERE ###
-#     TRUE ~ NA_real_
-#   ))
+passwords <- passwords %>%
+  mutate(time_unit_seconds = case_when(
+     time_unit == 'seconds' ~ 1,
+     time_unit == 'minutes' ~ 60,
+     time_unit == 'hours' ~ 3600,
+     time_unit == 'days' ~ 86400,
+     time_unit == 'weeks' ~ 604800,
+     time_unit == 'months' ~ 2629746,
+     time_unit == 'years' ~ 31536000,
+     TRUE ~ NA_real_
+   ))
 ```
 
 Do the same as above (yes, again), but now use the `case_match()` function, and in addition add a new column `value_seconds` which contains the "Time to crack by online guessing **in seconds**", using the `time_unit_seconds` column you have just created. Create the two columns with a single call to `mutate()`:
 
 ```{r}
-# passwords <- passwords %>%
-#   mutate(### YOUR CODE HERE ###)
+passwords <- passwords %>%
+   mutate(time_unit_seconds = case_match(
+     time_unit,
+     'seconds' ~ 1,
+     'minutes' ~ 60,
+     'hours' ~ 3600,
+     'days' ~ 86400,
+     'weeks' ~ 604800,
+     'months' ~ 2629746,
+     'years' ~ 31536000,
+     NA ~ NA,
+     .default = value),
+     value_seconds = time_unit_seconds*value)
 ```
 
 On second thought I don't like the `value_seconds` column name, change it to something more meaningful, like `time_to_crack_sec`:
 
 ```{r}
-# passwords <- passwords %>%
-#   rename(### YOUR CODE HERE ###)
+passwords <- passwords %>%
+  rename(time_to_crack_sec = value_seconds)
 ```
 
 ### `select_if` and `across`
@@ -203,8 +216,8 @@ On second thought I don't like the `value_seconds` column name, change it to som
 See that the transformation you just made worked by selecting only numeric columns:
 
 ```{r}
-# passwords %>%
-#   select_if(### YOUR CODE HERE ###)
+passwords %>%
+  select_if(is.numeric)
 ```
 
 
@@ -213,15 +226,15 @@ Use the `recode_yes_no()` function below to have **all logical columns** contain
 ```{r}
 recode_yes_no <- function(bool) ifelse(bool, "Yes", "No")
 
-# passwords <- passwords %>%
-#   mutate(### YOUR CODE HERE ###)
+passwords <- passwords %>%
+  mutate(across(where(is.logical),recode_yes_no))
 ```
 
 For each of the columns `time_to_crack_sec` and `offline_crack_sec` add another column with suffix "_log" (i.e. `time_to_crack_sec_log` and `offline_crack_log`), holding the log of that quantity (use `across()`!):
 
 ```{r}
-# passwords <- passwords %>%
-#   mutate(### YOUR CODE HERE ###)
+passwords <- passwords %>%
+  mutate(across( c(`time_to_crack_sec`, `offline_crack_sec`), list(log = log) ))
 ```
 
 Just so you won't get too bored, run this chunk to see the scatterplot of `time_to_crack_sec_log` by `strength`:
@@ -261,7 +274,7 @@ ggplot(passwords, aes(category, time_to_crack_sec_log)) +
 Put a filtered version of the `passwords` dataset without `NA` values in `passwords_no_na`. Use the `drop_na()` function within a pipe:
 
 ```{r}
-# passwords_no_na <- ### YOUR CODE HERE ###
+passwords_no_na <- passwords %>% drop_na()
 ```
 
 If you read carefully the columns definition in the [Tidy Tuesday repo](https://github.com/rfordatascience/tidytuesday/tree/master/data/2020/2020-01-14), you might have noticed that `strength` should cap at 10, whereas it clearly does not:
@@ -276,21 +289,21 @@ passwords %>%
 Let's assume we're bothered by that and would like to replace all values of `strength` above 10 with `NA`. Use the `replace` function in a pipe, taking inspiration from [this](https://stackoverflow.com/a/27909037/4095235) StackOverflow answer:
 
 ```{r}
-# passwords < passwords %>%
-#   mutate(### YOUR CODE HERE ###)
+passwords <- passwords %>%
+  mutate(strength = replace(strength, strength > 10, NA))
 ```
 
 See that it worked by filtering only passwords with `NA` for `strength`, do this in a pipe (no starter code, I want you to be able to Google stuff you don't know):
 
 ```{r}
-### YOUR CODE HERE ###
+passwords %>% filter(is.na(strength))
 ```
 
 Now let's assume we regret this, but now deleted `strength` values are lost, and so we put the maximum value we know, 10, to all passwords for which we don't know what `strength` is. Use the [`replace_na()`](https://tidyr.tidyverse.org/reference/replace_na.html) function from the `tidyr` package:
 
 ```{r}
-# passwords <- passwords %>%
-#   replace_na(### YOUR CODE HERE ###)
+passwords <- passwords %>%
+ replace_na(list(strength = 10))
 ```
 
 
@@ -303,15 +316,17 @@ Remember when we checked the mean strength for "food" passwords?
 Write a function which returns (in a `tibble`) for a given `categ` its mean `rank`, mean `strength` and mean `time_to_crack_sec_log`, ignoring `NA` values:
 
 ```{r}
-# category_mean_strength <- function(categ) {
-#   passwords %>%
-#     ### YOUR CODE HERE (can be more than 1 line) ###
-#     mutate(categ = categ) %>%
-#     select(categ, everything())
-# }
-#
+category_mean_strength <- function(categ) {
+   passwords %>%
+      drop_na() %>%
+      filter(category == categ) %>%
+      summarise(mean(rank), mean(strength), mean(time_to_crack_sec_log)) %>%
+      mutate(categ = categ) %>%
+      as_tibble()
+}
+
 ## Usage
-# category_mean_strength("fluffy")
+category_mean_strength("fluffy")
 ```
 
 Write a "tidy" function which accepts one of the numerical variables (unquoted) name and returns its *median* for every category, ignoring `NA` values. No need to check input:
@@ -319,12 +334,15 @@ Write a "tidy" function which accepts one of the numerical variables (unquoted) 
 (Remember the `count_var_for_gender` from class)
 
 ```{r}
-# median_per_category <- function(numeric_var) {
-#   ### YOUR CODE HERE (can be more than 1 line) ###
-# }
-# 
-# # Usage
-# median_per_category(strength)
+median_per_category <- function(numeric_var) {
+  passwords %>%
+  drop_na() %>%
+  group_by(category) %>%
+  summarise(median({{numeric_var}}))
+}
+ 
+# Usage
+median_per_category(strength)
 ```
 
 ### Paper questions
@@ -346,7 +364,7 @@ lm_obj <- lm(y ~ x1 + x2)
 Now, without loading any additional packages, extract by code the p-value for `x2` from the linear model:
 
 ```{r}
-### YOUR CODE HERE ###
+summary(lm_obj)$coefficients['x2','Pr(>|t|)']
 ```
 
 Dreadful! Now Wickham says:
@@ -356,7 +374,9 @@ Dreadful! Now Wickham says:
 But things have changed! Google "tidy lm output" and show how to extract that p-value **tidily** (now you can use additional libraries):
 
 ```{r}
-### YOUR CODE HERE ###
+#install.packages('broom')
+library(broom)
+tidy(lm_obj) %>% filter(term == 'x2') %>% select(p.value)
 ```
 
 ### Wrap up
